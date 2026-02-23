@@ -3,61 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROWE 帆布版型預覽系統</title>
+    <title>ROWE 帆布客製化尺寸預覽系統 (進階縮放版)</title>
     <style>
-        body { font-family: "微軟正黑體", sans-serif; text-align: center; background: #222; color: #fff; }
+        body { font-family: "微軟正黑體", sans-serif; text-align: center; background: #222; color: #fff; margin-bottom: 50px; }
+        
+        /* 控制面板區域 */
+        .control-panel { background: #333; padding: 20px; border-radius: 10px; max-width: 650px; margin: 20px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: left; }
+        .input-group { margin: 15px 0; display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
+        input[type="number"] { width: 80px; padding: 5px; font-size: 16px; text-align: center; }
+        button { padding: 8px 15px; cursor: pointer; background: #e60000; color: #fff; border: none; border-radius: 5px; font-weight: bold; font-size: 16px; }
+        button:hover { background: #ff1a1a; }
+        input[type="file"] { color: #ccc; }
+        input[type="range"] { width: 200px; cursor: pointer; }
+
+        /* 預覽區域 */
+        .preview-wrapper { 
+            width: 90%; 
+            max-width: 1000px; 
+            margin: 30px auto; 
+            background: #111;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px dashed #555;
+        }
         .preview-container {
             position: relative;
-            width: 90%;
-            max-width: 800px;
-            margin: 20px auto;
+            width: 100%;
+            aspect-ratio: 16 / 9; 
+            margin: 0 auto;
             background: #000;
-            aspect-ratio: 16 / 9; /* 預設顯示比例 */
             overflow: hidden;
-            box-shadow: 0px 4px 15px rgba(0,0,0,0.5);
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.8);
+            transition: aspect-ratio 0.3s ease;
         }
-        /* 底圖與透明公版疊加的設定 */
-        .bg-img, .overlay-img {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; /* 確保圖片填滿不變形 */
+
+        /* 底圖設定 */
+        .bg-img {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; /* 底圖填滿並自動裁切 */
         }
-        .overlay-img { z-index: 10; pointer-events: none; } /* 讓公版在最上層，且不干擾點擊 */
-        
-        /* 下方選圖區的按鈕與縮圖設定 */
-        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #e60000; color: #fff; border: none; border-radius: 5px; font-weight: bold;}
-        button:hover { background: #ff1a1a; }
-        .thumbnail { width: 120px; height: 80px; object-fit: cover; cursor: pointer; margin: 5px; border: 3px solid transparent; border-radius: 5px;}
-        .thumbnail:hover { border-color: #e60000; }
+        /* 公版設定 (修改為不變形並支援縮放) */
+        .overlay-img { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: contain; /* 【關鍵修改】：確保圖片完整顯示、不變形 */
+            z-index: 10; 
+            pointer-events: none; 
+            transform-origin: center center; /* 從正中心開始縮放 */
+            transform: scale(1); /* 預設縮放比例為 1 */
+        }
     </style>
 </head>
 <body>
-    <h2>1. 請選擇帆布比例</h2>
-    <button onclick="changeRatio('16/9', 'mask_16x9.png')">橫式 16:9</button>
-    <button onclick="changeRatio('4/5', 'mask_4x5.png')">直式 4:5</button>
 
-    <h2>2. 預覽確認區</h2>
-    <div class="preview-container" id="previewBox">
-        <img src="car_01.jpg" id="bgImage" class="bg-img">
-        <img src="mask_16x9.png" id="overlayImage" class="overlay-img">
+    <h2>ROWE 帆布版型預覽系統</h2>
+
+    <div class="control-panel">
+        <div class="input-group" style="justify-content: center;">
+            <label>帆布寬度：<input type="number" id="customWidth" value="16.1" step="0.1"></label> 
+            <label>帆布高度：<input type="number" id="customHeight" value="12.7" step="0.1"></label>
+            <button onclick="applyCustomRatio()">套用外框比例</button>
+        </div>
+        
+        <hr style="border-color: #555; margin: 20px 0;">
+
+        <div class="input-group">
+            <label style="width: 180px;">1. 選擇透明公版：</label>
+            <input type="file" accept="image/png" onchange="loadLocalImage(event, 'overlayImage')">
+        </div>
+        <div class="input-group">
+            <label style="width: 180px;">└ 公版縮放調整：</label>
+            <input type="range" id="overlayScale" min="0.1" max="3" step="0.05" value="1" oninput="scaleOverlay()">
+            <span id="scaleValue">100%</span>
+        </div>
+
+        <div class="input-group" style="margin-top: 25px;">
+            <label style="width: 180px;">2. 選擇車輛底圖：</label>
+            <input type="file" accept="image/jpeg, image/png" onchange="loadLocalImage(event, 'bgImage')">
+        </div>
     </div>
 
-    <h2>3. 點擊下方挑選車輛底圖</h2>
-    <div>
-        <img src="car_01.jpg" class="thumbnail" onclick="changeBg('car_01.jpg')">
-        <img src="car_02.jpg" class="thumbnail" onclick="changeBg('car_02.jpg')">
+    <div class="preview-wrapper">
+        <h3 style="color: #aaa; margin-top:0;">預覽確認區 <span id="ratioDisplay">(目前比例：16.1 : 12.7)</span></h3>
+        <div class="preview-container" id="previewBox">
+            <img src="" id="bgImage" class="bg-img" alt="等待載入底圖...">
+            <img src="" id="overlayImage" class="overlay-img" alt="等待載入公版...">
+        </div>
     </div>
 
     <script>
-        // 切換比例與公版的自動化動作
-        function changeRatio(ratio, maskSrc) {
-            document.getElementById('previewBox').style.aspectRatio = ratio;
-            document.getElementById('overlayImage').src = maskSrc;
+        function applyCustomRatio() {
+            const w = document.getElementById('customWidth').value;
+            const h = document.getElementById('customHeight').value;
+            if(w > 0 && h > 0) {
+                document.getElementById('previewBox').style.aspectRatio = w + " / " + h;
+                document.getElementById('ratioDisplay').innerText = `(目前比例：${w} : ${h})`;
+            } else {
+                alert("請輸入大於 0 的數字！");
+            }
         }
-        // 切換底圖的自動化動作
-        function changeBg(bgSrc) {
-            document.getElementById('bgImage').src = bgSrc;
+
+        function loadLocalImage(event, targetElementId) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById(targetElementId).src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
         }
+
+        // 【新增功能】：即時縮放透明公版
+        function scaleOverlay() {
+            const scale = document.getElementById('overlayScale').value;
+            // 套用 CSS 的 scale 屬性
+            document.getElementById('overlayImage').style.transform = `scale(${scale})`;
+            // 更新旁邊的百分比數字
+            document.getElementById('scaleValue').innerText = Math.round(scale * 100) + '%';
+        }
+
+        window.onload = function() {
+            applyCustomRatio();
+        };
     </script>
+
 </body>
 </html>
