@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROWE 帆布版型預覽系統</title>
+    <style>
+        body { font-family: "微軟正黑體", sans-serif; text-align: center; background: #222; color: #fff; }
+        .preview-container {
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+            background: #000;
+            aspect-ratio: 16 / 9; /* 預設顯示比例 */
+            overflow: hidden;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.5);
+        }
+        /* 底圖與透明公版疊加的設定 */
+        .bg-img, .overlay-img {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; /* 確保圖片填滿不變形 */
+        }
+        .overlay-img { z-index: 10; pointer-events: none; } /* 讓公版在最上層，且不干擾點擊 */
+        
+        /* 下方選圖區的按鈕與縮圖設定 */
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #e60000; color: #fff; border: none; border-radius: 5px; font-weight: bold;}
+        button:hover { background: #ff1a1a; }
+        .thumbnail { width: 120px; height: 80px; object-fit: cover; cursor: pointer; margin: 5px; border: 3px solid transparent; border-radius: 5px;}
+        .thumbnail:hover { border-color: #e60000; }
+    </style>
+</head>
+<body>
+    <h2>1. 請選擇帆布比例</h2>
+    <button onclick="changeRatio('16/9', 'mask_16x9.png')">橫式 16:9</button>
+    <button onclick="changeRatio('4/5', 'mask_4x5.png')">直式 4:5</button>
+
+    <h2>2. 預覽確認區</h2>
+    <div class="preview-container" id="previewBox">
+        <img src="car_01.jpg" id="bgImage" class="bg-img">
+        <img src="mask_16x9.png" id="overlayImage" class="overlay-img">
+    </div>
+
+    <h2>3. 點擊下方挑選車輛底圖</h2>
+    <div>
+        <img src="car_01.jpg" class="thumbnail" onclick="changeBg('car_01.jpg')">
+        <img src="car_02.jpg" class="thumbnail" onclick="changeBg('car_02.jpg')">
+    </div>
+
+    <script>
+        // 切換比例與公版的自動化動作
+        function changeRatio(ratio, maskSrc) {
+            document.getElementById('previewBox').style.aspectRatio = ratio;
+            document.getElementById('overlayImage').src = maskSrc;
+        }
+        // 切換底圖的自動化動作
+        function changeBg(bgSrc) {
+            document.getElementById('bgImage').src = bgSrc;
+        }
+    </script>
+</body>
+</html>
